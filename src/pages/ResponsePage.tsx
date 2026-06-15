@@ -38,7 +38,7 @@ export function ResponsePage() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Patient | null>(null)
 
-  const { register, handleSubmit, watch, reset, setValue } = useForm<ResponseFormValues>({
+  const { register, handleSubmit, watch, reset } = useForm<ResponseFormValues>({
     defaultValues: { data_envio_solicitacao: todayISO(), tratativa: 'NULO', situacao: 'SOLICITADO' }
   })
 

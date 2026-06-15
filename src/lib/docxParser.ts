@@ -1,6 +1,5 @@
 import mammoth from 'mammoth'
 import type { PatientCreateInput } from '@/types'
-import { toISODate } from '@/utils/dates'
 
 /** Extract raw text from a .docx ArrayBuffer */
 async function extractText(buffer: ArrayBuffer): Promise<string> {
@@ -48,9 +47,6 @@ export async function parseDocx(file: File): Promise<ParsedDocx> {
 
   const registro = extract(full, [/Registro:\s*(\w+)/i])
   const convenio = extract(full, [/Convênio:\s*(\S+)/i, /Convenio:\s*(\S+)/i])
-  const peso = extract(full, [/Peso:\s*([\d,\.]+)/i])
-  const altura = extract(full, [/Altura:\s*([\d,\.]+)/i])
-
   const ciclos = extract(full, [/Ciclos Previstos:\s*([\d\/]+)/i])
   const cicloNum = ciclos ? ciclos.split('/')[0] : ''
 

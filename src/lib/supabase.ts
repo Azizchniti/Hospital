@@ -18,9 +18,15 @@ export type Database = {
         Row: Patient
         Insert: Omit<Patient, 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Omit<Patient, 'id' | 'created_at' | 'updated_at'>>
+        Relationships: []
       }
     }
+    Views: Record<string, never>
+    Functions: Record<string, never>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const supabase = createClient(supabaseUrl, supabaseAnonKey) as any

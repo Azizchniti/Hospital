@@ -3,7 +3,7 @@ import { AlertTriangle, Calendar, RefreshCw, CheckCircle, Users, Clock } from 'l
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { StatusBadge, PrazoBadge } from '@/components/ui/Badge'
+import { StatusBadge } from '@/components/ui/Badge'
 import { useDashboard } from '@/features/patients/useDashboard'
 import { formatDate, daysFromToday, calcPrazo } from '@/utils/dates'
 import type { Patient } from '@/types'
