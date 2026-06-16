@@ -1,3 +1,4 @@
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Calendar, RefreshCw, CheckCircle, Users, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -25,34 +26,48 @@ function StatCard({ label, value, icon: Icon, color }: {
 function PatientRow({ patient, onRespond }: { patient: Patient; onRespond: () => void }) {
   const diff = daysFromToday(patient.proxima_qt)
   const prazo = patient.prazos || calcPrazo(patient.proxima_qt)
+  const isUrgent = prazo === 'ATENÇÃO' || prazo === 'ATENCAO'
+  const rowBg = isUrgent ? 'bg-orange-50' : ''
 
   return (
-    <tr className={prazo === 'ATENÇÃO' || prazo === 'ATENCAO' ? 'bg-orange-50' : ''}>
-      <td className="px-4 py-3">
-        <div className="text-sm font-medium text-gray-900">{patient.name || '—'}</div>
-        <div className="text-xs text-gray-400">{patient.convenio}</div>
-      </td>
-      <td className="px-4 py-3 text-sm text-gray-700 max-w-[180px] truncate">
-        {patient.plano_terapeutico}
-      </td>
-      <td className="px-4 py-3 text-sm text-gray-600 text-center">
-        {patient.ciclo_realizado || '—'}
-      </td>
-      <td className="px-4 py-3">
-        <div className="text-sm text-gray-700">{formatDate(patient.proxima_qt)}</div>
-        {diff !== null && (
-          <div className={`text-xs mt-0.5 ${diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-            {diff < 0 ? `${Math.abs(diff)}d atrasado` : `em ${diff}d`}
-          </div>
-        )}
-      </td>
-      <td className="px-4 py-3">
-        <StatusBadge status={patient.status_guia} />
-      </td>
-      <td className="px-4 py-3 text-right">
-        <Button size="sm" onClick={onRespond}>Resposta ›</Button>
-      </td>
-    </tr>
+    <>
+      <tr className={rowBg}>
+        <td className="px-4 py-3">
+          <div className="text-sm font-medium text-gray-900">{patient.name || '—'}</div>
+          <div className="text-xs text-gray-400">{patient.convenio}</div>
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-700 max-w-[180px] truncate">
+          {patient.plano_terapeutico}
+        </td>
+        <td className="px-4 py-3 text-sm text-gray-600 text-center">
+          {patient.ciclo_realizado || '—'}
+        </td>
+        <td className="px-4 py-3">
+          <div className="text-sm text-gray-700">{formatDate(patient.proxima_qt)}</div>
+          {diff !== null && (
+            <div className={`text-xs mt-0.5 ${diff < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+              {diff < 0 ? `${Math.abs(diff)}d atrasado` : `em ${diff}d`}
+            </div>
+          )}
+        </td>
+        <td className="px-4 py-3">
+          <StatusBadge status={patient.status_guia} />
+        </td>
+        <td className={`px-4 py-3 text-right ${!patient.observacao ? 'border-b border-gray-100' : ''}`}>
+          <Button size="sm" onClick={onRespond}>Resposta ›</Button>
+        </td>
+      </tr>
+      {patient.observacao && (
+        <tr className={`border-b border-gray-100 ${rowBg}`}>
+          <td colSpan={6} className="px-4 pb-3 pt-0">
+            <div className="flex items-start gap-2 text-xs bg-amber-50 border-l-2 border-amber-300 rounded-r px-2.5 py-1.5">
+              <span className="font-semibold text-amber-700 shrink-0 mt-0.5">Obs:</span>
+              <span className="text-gray-700 leading-relaxed">{patient.observacao}</span>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }
 
@@ -77,9 +92,11 @@ function PatientTable({ patients, emptyMsg, onRespond }: {
             <th className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide text-right">Ação</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-100">
+        <tbody>
           {patients.slice(0, 20).map(p => (
-            <PatientRow key={p.id} patient={p} onRespond={() => onRespond(p.id)} />
+            <React.Fragment key={p.id}>
+              <PatientRow patient={p} onRespond={() => onRespond(p.id)} />
+            </React.Fragment>
           ))}
         </tbody>
       </table>
