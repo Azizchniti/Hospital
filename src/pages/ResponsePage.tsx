@@ -7,9 +7,9 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input, Select } from '@/components/ui/Input'
 import { StatusBadge } from '@/components/ui/Badge'
-import { usePatients, useUpdatePatient } from '@/features/patients/hooks'
+import { usePatients, useUpdatePatient, useArchiveTreatment } from '@/features/patients/hooks'
 import { formatDate, addDaysToDate, todayISO } from '@/utils/dates'
-import type { Patient, ResponseFormValues } from '@/types'
+import type { Patient, ResponseFormValues, StatusTratamento } from '@/types'
 
 const STATUS_OPTIONS = [
   { value: 'AUTORIZADA',      label: '✅ Autorizada'       },
@@ -34,9 +34,11 @@ export function ResponsePage() {
   const location = useLocation()
   const { data: patients = [] } = usePatients()
   const { mutate: updatePatient, isPending } = useUpdatePatient()
+  const { mutate: archiveTreatment, isPending: isArchiving } = useArchiveTreatment()
 
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Patient | null>(null)
+  const [archiveStatus, setArchiveStatus] = useState<StatusTratamento>('SUSPENSO')
 
   const { register, handleSubmit, watch, reset } = useForm<ResponseFormValues>({
     defaultValues: { data_envio_solicitacao: todayISO(), tratativa: 'NULO', situacao: 'SOLICITADO' }
@@ -102,6 +104,14 @@ export function ResponsePage() {
 
     updatePatient(
       { id: selected.id, input: update },
+      { onSuccess: () => { setSelected(null); reset() } }
+    )
+  }
+
+  function onArchive() {
+    if (!selected) return
+    archiveTreatment(
+      { id: selected.id, status: archiveStatus },
       { onSuccess: () => { setSelected(null); reset() } }
     )
   }
@@ -215,6 +225,35 @@ export function ResponsePage() {
                 </Button>
               </div>
             </form>
+
+            {/* Treatment lifecycle */}
+            <div className="mt-6 pt-5 border-t border-gray-200">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                Status do tratamento
+              </p>
+              <div className="flex gap-3 items-center">
+                <select
+                  value={archiveStatus}
+                  onChange={e => setArchiveStatus(e.target.value as StatusTratamento)}
+                  className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+                >
+                  <option value="SUSPENSO">Medicação Suspensa</option>
+                  <option value="FINALIZADO">Protocolo Finalizado</option>
+                  <option value="OBITO">Óbito</option>
+                </select>
+                <Button
+                  variant="ghost"
+                  loading={isArchiving}
+                  onClick={onArchive}
+                  className="text-red-600 hover:bg-red-50 border border-red-200 whitespace-nowrap"
+                >
+                  Arquivar paciente
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                O paciente sairá do painel e lista principal e ficará em Arquivados.
+              </p>
+            </div>
           </Card>
         )}
       </div>

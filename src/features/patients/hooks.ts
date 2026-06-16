@@ -2,15 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import {
   fetchPatients,
+  fetchArchivedPatients,
   fetchPatientById,
   createPatient,
   updatePatient,
   bulkCreatePatients,
+  archiveTreatment,
+  registerCycle,
   deactivatePatient,
 } from './api'
-import type { PatientCreateInput, PatientUpdateInput } from '@/types'
+import type { PatientCreateInput, PatientUpdateInput, StatusTratamento } from '@/types'
 
 export const PATIENTS_KEY = ['patients'] as const
+export const ARCHIVED_KEY = ['patients', 'archived'] as const
 
 export function usePatients() {
   return useQuery({
@@ -67,6 +71,50 @@ export function useBulkImport() {
     },
     onError: (err: Error) => {
       toast.error(`Erro na importação: ${err.message}`)
+    },
+  })
+}
+
+export function useArchivedPatients() {
+  return useQuery({
+    queryKey: ARCHIVED_KEY,
+    queryFn: fetchArchivedPatients,
+    staleTime: 1000 * 60 * 2,
+  })
+}
+
+export function useArchiveTreatment() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: string; status: StatusTratamento }) =>
+      archiveTreatment(id, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PATIENTS_KEY })
+      qc.invalidateQueries({ queryKey: ARCHIVED_KEY })
+      toast.success('Status do tratamento atualizado.')
+    },
+    onError: (err: Error) => {
+      toast.error(`Erro: ${err.message}`)
+    },
+  })
+}
+
+export function useRegisterCycle() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string
+      payload: { ultima_qt: string; ciclo_realizado: string; proxima_qt: string | null }
+    }) => registerCycle(id, payload),
+    onSuccess: (patient) => {
+      qc.invalidateQueries({ queryKey: PATIENTS_KEY })
+      toast.success(`Ciclo registrado para ${patient.name || 'paciente'}.`)
+    },
+    onError: (err: Error) => {
+      toast.error(`Erro: ${err.message}`)
     },
   })
 }

@@ -1,5 +1,5 @@
 import { cn } from '@/utils/cn'
-import type { GuiaStatus, Situacao, Prazo } from '@/types'
+import type { GuiaStatus, Situacao, Prazo, StatusTratamento } from '@/types'
 
 const variants = {
   green:  'bg-green-50 text-green-700 border-green-200',
@@ -51,6 +51,17 @@ export function SituacaoBadge({ situacao }: { situacao: Situacao | string }) {
   }
   const { variant } = map[situacao] ?? { variant: 'gray' as Variant }
   return <Badge variant={variant}>{situacao}</Badge>
+}
+
+export function StatusTratamentoBadge({ status }: { status: StatusTratamento | string }) {
+  const map: Record<string, { label: string; variant: Variant }> = {
+    'ATIVO':      { label: 'Ativo',      variant: 'green'  },
+    'SUSPENSO':   { label: 'Suspenso',   variant: 'yellow' },
+    'FINALIZADO': { label: 'Finalizado', variant: 'gray'   },
+    'OBITO':      { label: 'Óbito',      variant: 'red'    },
+  }
+  const { label, variant } = map[status] ?? { label: status, variant: 'gray' as Variant }
+  return <Badge variant={variant}>{label}</Badge>
 }
 
 export function PrazoBadge({ prazo }: { prazo: Prazo | string | null }) {

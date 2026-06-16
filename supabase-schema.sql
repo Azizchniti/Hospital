@@ -47,7 +47,11 @@ create table if not exists public.patients (
   laserterapia              boolean not null default false,
   observacao                text,
   diagnostico               text,
-  is_active                 boolean not null default true
+  is_active                 boolean not null default true,
+
+  -- Treatment lifecycle (ATIVO = normal; others = archived)
+  status_tratamento         text not null default 'ATIVO'
+                              check (status_tratamento in ('ATIVO','SUSPENSO','FINALIZADO','OBITO'))
 );
 
 -- ─── Indexes ─────────────────────────────────────────────────────────────────

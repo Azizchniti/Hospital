@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, FilePlus, CheckSquare, Users, Upload, Download } from 'lucide-react'
+import { LayoutDashboard, FilePlus, CheckSquare, Users, Upload, Download, Archive } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { usePatients } from '@/features/patients/hooks'
 import { exportToXLSX } from '@/lib/xlsxHandler'
@@ -10,7 +10,8 @@ const nav = [
   { to: '/nova',     icon: FilePlus,        label: 'Nova Solicitação'     },
   { to: '/resposta', icon: CheckSquare,     label: 'Registrar Resposta'  },
   { to: '/pacientes',icon: Users,           label: 'Pacientes'            },
-  { to: '/importar', icon: Upload,          label: 'Importar Excel'       },
+  { to: '/importar',   icon: Upload,   label: 'Importar Excel'  },
+  { to: '/arquivados', icon: Archive,  label: 'Arquivados'      },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {

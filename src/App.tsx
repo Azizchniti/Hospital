@@ -8,6 +8,7 @@ import { NewRequestPage } from '@/pages/NewRequestPage'
 import { ResponsePage } from '@/pages/ResponsePage'
 import { PatientsPage } from '@/pages/PatientsPage'
 import { ImportPage } from '@/pages/ImportPage'
+import { ArquivadosPage } from '@/pages/ArquivadosPage'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,7 +29,8 @@ export function App() {
             <Route path="/nova"      element={<NewRequestPage  />} />
             <Route path="/resposta"  element={<ResponsePage    />} />
             <Route path="/pacientes" element={<PatientsPage    />} />
-            <Route path="/importar"  element={<ImportPage      />} />
+            <Route path="/importar"   element={<ImportPage      />} />
+            <Route path="/arquivados" element={<ArquivadosPage  />} />
             <Route path="*"          element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>

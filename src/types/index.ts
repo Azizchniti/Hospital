@@ -1,5 +1,12 @@
 // ─── Core domain types ───────────────────────────────────────────────────────
 
+export type StatusTratamento =
+  | 'ATIVO'
+  | 'SUSPENSO'
+  | 'FINALIZADO'
+  | 'OBITO'
+
+
 export type GuiaStatus =
   | 'AUTORIZADA'
   | 'SEM AUTORIZAÇÃO'
@@ -59,7 +66,8 @@ export interface Patient {
   laserterapia: boolean
   observacao: string | null
   diagnostico: string | null
-  is_active: boolean              // false = moved to Inativos
+  is_active: boolean
+  status_tratamento: StatusTratamento
 }
 
 // ─── Form types (partial, used for create/update) ────────────────────────────

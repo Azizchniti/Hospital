@@ -34,6 +34,7 @@ function mapRow(row: ExcelRow): PatientCreateInput | null {
     data_envio_solicitacao: toISODate(row['DATA DO ENVIO DA SOLICITAÇÃO']) || null,
     diagnostico: null,
     is_active: true,
+    status_tratamento: 'ATIVO',
   }
 }
 

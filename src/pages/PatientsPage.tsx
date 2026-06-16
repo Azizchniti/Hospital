@@ -1,12 +1,99 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search } from 'lucide-react'
+import { Search, CheckCircle } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge, SituacaoBadge, PrazoBadge } from '@/components/ui/Badge'
-import { usePatients } from '@/features/patients/hooks'
-import { formatDate, calcPrazo } from '@/utils/dates'
+import { usePatients, useRegisterCycle } from '@/features/patients/hooks'
+import { formatDate, calcPrazo, addDaysToDate, todayISO } from '@/utils/dates'
+import type { Patient } from '@/types'
+
+function nextCicloLabel(current: string | null): string {
+  if (!current) return '1'
+  const n = parseInt(current, 10)
+  return isNaN(n) ? current : String(n + 1)
+}
+
+function CycleModal({
+  patient,
+  onClose,
+}: {
+  patient: Patient
+  onClose: () => void
+}) {
+  const { mutate: registerCycle, isPending } = useRegisterCycle()
+  const [dataRealizada, setDataRealizada] = useState(todayISO())
+  const [cicloRealizado, setCicloRealizado] = useState(nextCicloLabel(patient.ciclo_realizado))
+
+  const proximaQt = patient.intervalo_dias
+    ? addDaysToDate(dataRealizada, patient.intervalo_dias)
+    : null
+
+  function handleSave() {
+    registerCycle(
+      { id: patient.id, payload: { ultima_qt: dataRealizada, ciclo_realizado: cicloRealizado, proxima_qt: proximaQt } },
+      { onSuccess: onClose }
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle className="w-5 h-5 text-green-600" />
+          <h2 className="text-base font-semibold text-gray-900">Registrar ciclo realizado</h2>
+        </div>
+
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm">
+          <div className="font-medium text-gray-900">{patient.name}</div>
+          <div className="text-gray-500 mt-0.5">{patient.plano_terapeutico} · {patient.convenio}</div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Data de realização</label>
+            <input
+              type="date"
+              value={dataRealizada}
+              onChange={e => setDataRealizada(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Ciclo realizado</label>
+            <input
+              type="text"
+              value={cicloRealizado}
+              onChange={e => setCicloRealizado(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+          </div>
+
+          <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+            <span className="font-medium">Próxima QT calculada: </span>
+            {proximaQt ? formatDate(proximaQt) : '—'}
+            {patient.intervalo_dias && (
+              <span className="text-blue-500 ml-1">({patient.intervalo_dias} dias)</span>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-400">
+            Situação será redefinida para "A Solicitar" automaticamente.
+          </p>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button variant="primary" loading={isPending} onClick={handleSave}>
+            Confirmar ciclo
+          </Button>
+          <Button onClick={onClose}>Cancelar</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function PatientsPage() {
   const navigate = useNavigate()
@@ -14,6 +101,7 @@ export function PatientsPage() {
   const [query, setQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterSituacao, setFilterSituacao] = useState('')
+  const [cyclePatient, setCyclePatient] = useState<Patient | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
@@ -23,23 +111,34 @@ export function PatientsPage() {
       if (!q) return true
       return (
         p.name.toLowerCase().includes(q) ||
-        (p.plano_terapeutico||'').toLowerCase().includes(q) ||
-        (p.convenio||'').toLowerCase().includes(q) ||
-        String(p.registro||'').includes(q)
+        (p.plano_terapeutico || '').toLowerCase().includes(q) ||
+        (p.convenio || '').toLowerCase().includes(q) ||
+        String(p.registro || '').includes(q)
       )
     })
   }, [patients, query, filterStatus, filterSituacao])
 
+  // Group by registro (or name if no registro) so multiple treatment lines are visually linked
+  const rows = useMemo(() => {
+    let lastKey = ''
+    return filtered.slice(0, 200).map(p => {
+      const key = p.registro || p.name
+      const isFirstInGroup = key !== lastKey
+      lastKey = key
+      return { patient: p, isFirstInGroup }
+    })
+  }, [filtered])
+
   return (
     <div>
-      <PageHeader
-        title="Pacientes"
-        subtitle={`${patients.length} registros ativos`}
-      />
+      <PageHeader title="Pacientes" subtitle={`${patients.length} registros ativos`} />
+
+      {cyclePatient && (
+        <CycleModal patient={cyclePatient} onClose={() => setCyclePatient(null)} />
+      )}
 
       <div className="p-8">
         <Card>
-          {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-5">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -73,7 +172,6 @@ export function PatientsPage() {
             </select>
           </div>
 
-          {/* Table */}
           {isLoading ? (
             <div className="text-center py-12 text-gray-400 text-sm">Carregando...</div>
           ) : filtered.length === 0 ? (
@@ -98,15 +196,30 @@ export function PatientsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filtered.slice(0, 200).map(p => (
-                    <tr key={p.id} className={
-                      (p.prazos === 'ATENÇÃO' || p.prazos === 'ATENCAO') ? 'bg-orange-50' : 'hover:bg-gray-50'
-                    }>
+                  {rows.map(({ patient: p, isFirstInGroup }) => (
+                    <tr
+                      key={p.id}
+                      className={
+                        (p.prazos === 'ATENÇÃO' || p.prazos === 'ATENCAO')
+                          ? 'bg-orange-50'
+                          : !isFirstInGroup
+                          ? 'bg-gray-50/60 hover:bg-gray-100/60'
+                          : 'hover:bg-gray-50'
+                      }
+                    >
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{p.name || '—'}</div>
-                        <div className="text-xs text-gray-400">{p.registro || ''}</div>
+                        {isFirstInGroup ? (
+                          <>
+                            <div className="font-medium text-gray-900">{p.name || '—'}</div>
+                            <div className="text-xs text-gray-400">{p.registro || ''}</div>
+                          </>
+                        ) : (
+                          <div className="text-xs text-gray-400 pl-3 border-l-2 border-gray-200">
+                            {p.registro || p.name}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{p.convenio}</td>
+                      <td className="px-4 py-3 text-gray-600">{isFirstInGroup ? p.convenio : ''}</td>
                       <td className="px-4 py-3 text-gray-700 max-w-[160px]">
                         <div className="truncate" title={p.plano_terapeutico}>{p.plano_terapeutico}</div>
                       </td>
@@ -118,7 +231,14 @@ export function PatientsPage() {
                       <td className="px-4 py-3 text-right whitespace-nowrap">
                         <Button
                           size="sm"
-                          className="mr-2"
+                          className="mr-1"
+                          onClick={() => setCyclePatient(p)}
+                          title="Registrar ciclo realizado"
+                        >
+                          Ciclo ✓
+                        </Button>
+                        <Button
+                          size="sm"
                           onClick={() => navigate('/resposta', { state: { patientId: p.id } })}
                         >
                           Resposta

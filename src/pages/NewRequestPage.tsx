@@ -78,6 +78,7 @@ export function NewRequestPage() {
       data_envio_solicitacao: null,
       prazos: 'DENTRO DO PRAZO',
       is_active: true,
+      status_tratamento: 'ATIVO',
     }
     createPatient(input, { onSuccess: () => { reset(); setParseStatus('idle') } })
   }
