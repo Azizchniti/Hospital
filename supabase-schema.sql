@@ -98,8 +98,77 @@ create policy "authenticated users can do everything"
   using (true)
   with check (true);
 
+-- ─── profiles table ──────────────────────────────────────────────────────────
+-- Mirrors auth.users 1:1. Created automatically by trigger on signup.
+
+create table if not exists public.profiles (
+  id          uuid primary key references auth.users (id) on delete cascade,
+  email       text not null,
+  full_name   text not null default '',
+  role        text not null default 'user'
+                check (role in ('admin', 'user')),
+  is_active   boolean not null default true,
+  created_at  timestamptz not null default now(),
+  created_by  uuid references public.profiles (id) on delete set null
+);
+
+-- ─── Helper: get current user's role (bypasses RLS to avoid recursion) ───────
+
+create or replace function public.get_my_role()
+returns text
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
+-- ─── RLS on profiles ─────────────────────────────────────────────────────────
+
+alter table public.profiles enable row level security;
+
+-- Any authenticated user can read their own profile; admins can read all.
+create policy "profiles_select"
+  on public.profiles for select to authenticated
+  using (auth.uid() = id or public.get_my_role() = 'admin');
+
+-- Only admins can update profiles (e.g. toggle is_active, change role).
+create policy "profiles_update_admin"
+  on public.profiles for update to authenticated
+  using  (public.get_my_role() = 'admin')
+  with check (public.get_my_role() = 'admin');
+
+-- ─── Trigger: auto-create profile when a new auth user is created ────────────
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, full_name, role)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', ''),
+    coalesce(new.raw_user_meta_data->>'role', 'user')
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
 -- ─── Done ─────────────────────────────────────────────────────────────────────
 -- After running this script:
 -- 1. Go to Supabase → Authentication → Providers and enable Email.
--- 2. Create user accounts for your team under Authentication → Users.
+-- 2. Run this SQL once to promote the first admin (replace the email):
+--      UPDATE public.profiles SET role = 'admin' WHERE email = 'you@hospital.com';
 -- 3. Copy your project URL and anon key to the app's .env.local file.
+-- 4. Deploy the edge function:
+--      supabase functions deploy invite-user

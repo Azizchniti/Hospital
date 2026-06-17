@@ -1,3 +1,17 @@
+// ─── Auth / User types ────────────────────────────────────────────────────────
+
+export type UserRole = 'admin' | 'user'
+
+export interface Profile {
+  id: string
+  email: string
+  full_name: string
+  role: UserRole
+  is_active: boolean
+  created_at: string
+  created_by: string | null
+}
+
 // ─── Core domain types ───────────────────────────────────────────────────────
 
 export type StatusTratamento =
