@@ -15,8 +15,9 @@ export async function inviteUser(params: {
   full_name: string
   role: 'admin' | 'user'
 }): Promise<void> {
-  const { error } = await supabase.functions.invoke('invite-user', { body: params })
-  if (error) throw new Error(error.message)
+  const { data, error } = await supabase.functions.invoke('invite-user', { body: params })
+  // supabase.functions.invoke swallows the real error body — unwrap it
+  if (error) throw new Error(data?.error ?? error.message)
 }
 
 export async function toggleProfileStatus(id: string, is_active: boolean): Promise<void> {
