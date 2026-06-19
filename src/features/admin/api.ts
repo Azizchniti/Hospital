@@ -15,9 +15,23 @@ export async function inviteUser(params: {
   full_name: string
   role: 'admin' | 'user'
 }): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('invite-user', { body: params })
-  // supabase.functions.invoke swallows the real error body — unwrap it
-  if (error) throw new Error(data?.error ?? error.message)
+  const response = await supabase.functions.invoke('invite-user', { body: params })
+
+  if (response.error) {
+    // supabase.functions.invoke wraps the actual body inside error.context
+    let message = 'Erro ao enviar convite.'
+    try {
+      const body = await response.error.context?.json()
+      message = body?.message || body?.error || message
+    } catch {
+      message = response.error.message || message
+    }
+    throw new Error(message)
+  }
+
+  if (response.data?.error || response.data?.message) {
+    throw new Error(response.data.message || response.data.error)
+  }
 }
 
 export async function toggleProfileStatus(id: string, is_active: boolean): Promise<void> {

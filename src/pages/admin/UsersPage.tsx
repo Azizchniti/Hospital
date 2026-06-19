@@ -141,27 +141,37 @@ function ActionMenu({ profile, currentUserId }: { profile: Profile; currentUserI
 function InviteModal({ onClose }: { onClose: () => void }) {
   const invite = useInviteUser()
 
-  const [email, setEmail]         = useState('')
-  const [fullName, setFullName]   = useState('')
-  const [role, setRole]           = useState<UserRole>('user')
-  const [validationErr, setVErr]  = useState<string | null>(null)
+  const [email, setEmail]        = useState('')
+  const [fullName, setFullName]  = useState('')
+  const [role, setRole]          = useState<UserRole>('user')
+  const [validationErr, setVErr] = useState<string | null>(null)
+
+  const isPending  = invite.isPending
+  const errorMsg   = validationErr ?? (invite.error as Error | null)?.message ?? null
+  const isRateLimit = errorMsg?.toLowerCase().includes('limite') || errorMsg?.toLowerCase().includes('rate')
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (isPending) return           // hard guard against double-submission
     setVErr(null)
+    invite.reset()
     if (!email.includes('@')) { setVErr('Email inválido.'); return }
     if (!fullName.trim())     { setVErr('Nome obrigatório.'); return }
 
-    await invite.mutateAsync({ email: email.trim(), full_name: fullName.trim(), role })
-    onClose()
+    try {
+      await invite.mutateAsync({ email: email.trim(), full_name: fullName.trim(), role })
+      onClose()
+    } catch {
+      // error is stored in invite.error — displayed below
+    }
   }
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — locked while request is in-flight */}
       <div
         className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30"
-        onClick={onClose}
+        onClick={isPending ? undefined : onClose}
       />
 
       {/* Panel */}
@@ -177,9 +187,14 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             </p>
           </div>
 
-          {(validationErr || invite.error) && (
-            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {validationErr ?? (invite.error as Error)?.message}
+          {errorMsg && (
+            <div className={`mb-4 px-4 py-3 rounded-lg text-sm border ${
+              isRateLimit
+                ? 'bg-orange-50 border-orange-200 text-orange-700'
+                : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
+              {isRateLimit && <span className="font-medium">Limite atingido — </span>}
+              {errorMsg}
             </div>
           )}
 
