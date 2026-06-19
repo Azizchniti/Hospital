@@ -15,22 +15,18 @@ export async function inviteUser(params: {
   full_name: string
   role: 'admin' | 'user'
 }): Promise<void> {
-  const response = await supabase.functions.invoke('invite-user', { body: params })
+  const { data, error } = await supabase.functions.invoke('invite-user', { body: params })
 
-  if (response.error) {
-    // supabase.functions.invoke wraps the actual body inside error.context
-    let message = 'Erro ao enviar convite.'
-    try {
-      const body = await response.error.context?.json()
-      message = body?.message || body?.error || message
-    } catch {
-      message = response.error.message || message
-    }
+  // When the edge function returns non-2xx, `error` is set and `data` holds
+  // the parsed response body — read the message from there first.
+  if (error) {
+    const message = data?.message || data?.error || error.message || 'Erro ao enviar convite.'
     throw new Error(message)
   }
 
-  if (response.data?.error || response.data?.message) {
-    throw new Error(response.data.message || response.data.error)
+  // 2xx but the body signals a logical error
+  if (data?.error || data?.message) {
+    throw new Error(data.message || data.error)
   }
 }
 
