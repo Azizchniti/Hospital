@@ -17,8 +17,6 @@ export async function inviteUser(params: {
 }): Promise<void> {
   const { data, error } = await supabase.functions.invoke('invite-user', { body: params })
 
-  console.debug('[inviteUser] data:', JSON.stringify(data), '| error:', error?.message)
-
   // When the edge function returns non-2xx, `error` is set and `data` holds
   // the parsed response body — read the message from there first.
   if (error) {
