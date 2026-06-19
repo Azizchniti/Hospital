@@ -58,26 +58,31 @@ export function SetPasswordPage() {
   const [loading, setLoading]     = useState(false)
 
   useEffect(() => {
-    // Supabase auto-exchanges the invite token from the URL hash.
-    // We wait for a session to confirm the invite link is valid.
+    let settled = false
+
+    const settle = (hasSession: boolean) => {
+      if (settled) return
+      settled = true
+      setPageState(hasSession ? 'form' : 'invalid')
+    }
+
+    // Subscribe FIRST so we never miss the SIGNED_IN event from the token exchange
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event: string, session: any) => { if (session) settle(true) }
+    )
+
+    // Also check immediately for an already-established session
     supabase.auth.getSession().then(({ data: { session } }: any) => {
-      if (session) {
-        setPageState('form')
-      } else {
-        // Give a brief moment for onAuthStateChange to fire (hash exchange)
-        const timer = setTimeout(() => setPageState('invalid'), 2000)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          (_: string, s: any) => {
-            if (s) {
-              clearTimeout(timer)
-              setPageState('form')
-              subscription.unsubscribe()
-            }
-          }
-        )
-        return () => { clearTimeout(timer); subscription.unsubscribe() }
-      }
+      if (session) settle(true)
     })
+
+    // Give Supabase up to 8 seconds to exchange the invite token
+    const timer = setTimeout(() => settle(false), 8000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timer)
+    }
   }, [])
 
   const isStrongEnough = password.length >= 8 && /[A-Z]/.test(password) && /[a-z]/.test(password)
