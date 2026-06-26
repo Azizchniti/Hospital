@@ -35,12 +35,13 @@ Deno.serve(async (req: Request) => {
     return json({ success: false, error: 'Invalid JSON body' }, 400)
   }
 
-  const nome             = typeof body.nome             === 'string' ? body.nome.trim()             : ''
+  const nome              = typeof body.nome              === 'string' ? body.nome.trim()              : ''
   const numero_prontuario = typeof body.numero_prontuario === 'string' ? body.numero_prontuario.trim() : ''
-  const cpf              = typeof body.cpf              === 'string' ? body.cpf.trim()              : null
-  const convenio         = typeof body.convenio         === 'string' ? body.convenio.trim()         : 'A DEFINIR'
-  const medico           = typeof body.medico           === 'string' ? body.medico.trim()           : null
-  const diagnostico      = typeof body.diagnostico      === 'string' ? body.diagnostico.trim()      : null
+  const cpf               = typeof body.cpf               === 'string' ? body.cpf.trim()               : null
+  const convenio          = typeof body.convenio          === 'string' ? body.convenio.trim()          : 'A DEFINIR'
+  const medico            = typeof body.medico            === 'string' ? body.medico.trim()            : null
+  const diagnostico       = typeof body.diagnostico       === 'string' ? body.diagnostico.trim()       : null
+  const protocolo         = typeof body.protocolo         === 'string' ? body.protocolo.trim()         : null
 
   if (!nome) return json({ success: false, error: 'Campo obrigatório em falta: nome' }, 400)
   if (!numero_prontuario) return json({ success: false, error: 'Campo obrigatório em falta: numero_prontuario' }, 400)
@@ -76,7 +77,7 @@ Deno.serve(async (req: Request) => {
       convenio:          convenio,
       medico:            medico,
       diagnostico:       diagnostico,
-      plano_terapeutico: 'A DEFINIR',
+      plano_terapeutico: protocolo ?? 'A DEFINIR',
       status_guia:       'SEM AUTORIZAÇÃO',
       tratativa:         'NULO',
       situacao:          'A SOLICITAR',
